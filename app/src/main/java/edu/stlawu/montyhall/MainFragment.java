@@ -75,8 +75,13 @@ public class MainFragment extends Fragment {
         newButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                SharedPreferences.Editor pref_editor = getActivity().getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE).edit();
-                pref_editor.putBoolean(NEW_CLICKED, true).apply();
+                /*SharedPreferences.Editor clicked = getActivity().getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE).edit();
+                clicked.putBoolean(NEW_CLICKED, true).apply();*/
+
+                SharedPreferences clicked = getActivity().getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
+                SharedPreferences.Editor edit = clicked.edit();
+                edit.putBoolean(NEW_CLICKED, true);
+                edit.apply();
 
                 Intent intent = new Intent(getActivity(), GameActivity.class);
                 getActivity().startActivity(intent);
@@ -88,8 +93,13 @@ public class MainFragment extends Fragment {
         contButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                SharedPreferences.Editor pref_editor = getActivity().getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE).edit();
-                pref_editor.putBoolean(NEW_CLICKED, false).apply(); // if new clicked was not clicked then cont was clicked
+                /*SharedPreferences.Editor clicked = getActivity().getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE).edit();
+                clicked.putBoolean(NEW_CLICKED, false).apply(); // if new clicked was not clicked then cont was clicked*/
+
+                SharedPreferences clicked = getActivity().getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
+                SharedPreferences.Editor edit = clicked.edit();
+                edit.putBoolean(NEW_CLICKED, false);
+                edit.apply();
 
                 Intent intent = new Intent(getActivity(), GameActivity.class);
 

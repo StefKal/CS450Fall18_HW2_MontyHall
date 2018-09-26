@@ -1,10 +1,12 @@
 package edu.stlawu.montyhall;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -15,6 +17,9 @@ import java.util.ArrayList;
 import java.util.Objects;
 import java.util.Random;
 import java.util.prefs.Preferences;
+
+import static edu.stlawu.montyhall.MainFragment.NEW_CLICKED;
+import static edu.stlawu.montyhall.MainFragment.PREF_NAME;
 
 
 /**
@@ -35,9 +40,7 @@ public class GameFragment extends Fragment {
     private int wins, loss, total;
     private int[] valArray; // [0, 0, 0] randomly sets a 1, that represents a car
     private int carIndex; // carindex is the 1 above
-
-
-
+    private boolean clicked_state;
 
     //setRetainInstance to save isntance data on rotation
     public GameFragment() {
@@ -48,6 +51,19 @@ public class GameFragment extends Fragment {
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setRetainInstance(true); // saves instance data
+
+        // check clicked shared variable
+        SharedPreferences clicked_check = getActivity().getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
+        Boolean shared_clicked = clicked_check.getBoolean(NEW_CLICKED, true);
+        Log.i("SHARED BOOL", shared_clicked.toString());
+
+        clicked_state = shared_clicked;
+        Log.i("CLICKED STATE BOOL", Boolean.toString(clicked_state));
+
+        // get shared score values
+
+
+
     }
 
     @Override
@@ -58,7 +74,9 @@ public class GameFragment extends Fragment {
 
 
 
-        // initialize imagebuttons
+
+
+            // initialize imagebuttons
             this.door1 = rootView.findViewById(R.id.door1);
             this.door2 = rootView.findViewById(R.id.door2);
             this.door3 = rootView.findViewById(R.id.door3);
@@ -74,9 +92,27 @@ public class GameFragment extends Fragment {
             this.doorArrayList.add(door1);
             this.doorArrayList.add(door2);
             this.doorArrayList.add(door3);
-            refresh(0);
 
-            gameState = getActivity().getPreferences(Context.MODE_PRIVATE).getInt("gameState", 0);
+
+            // new button clicked
+            if (clicked_state == true) {
+
+                refresh(0);
+
+                // pass in saved grid values
+
+            // continue clicked
+            } else if (clicked_state == false) {
+
+                // set and save gamestate
+
+                // pass in saved grid values
+
+            }
+
+
+
+
 
 
 
@@ -140,7 +176,7 @@ public class GameFragment extends Fragment {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        //SharedPreferences preferences = this.getActivity().getSharedPreferences("pref", Context.MODE_PRIVATE);
+
     }
 
     @Override
@@ -192,7 +228,7 @@ public class GameFragment extends Fragment {
 
                 gameState = 1;
 
-                getActivity().getPreferences(Context.MODE_PRIVATE).edit().putInt("gameState", gameState).apply();
+
 
 
 
@@ -263,7 +299,8 @@ public class GameFragment extends Fragment {
 
 
             this.gameState = 0;
-            getActivity().getPreferences(Context.MODE_PRIVATE).edit().putInt("gameState", gameState).apply();
+
+
             this.valArray = new int[]{0, 0, 0};
             carIndex = randomizer.nextInt(3);
             valArray[carIndex] = 1;
