@@ -2,6 +2,8 @@ package edu.stlawu.montyhall;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.media.AudioAttributes;
+import android.media.SoundPool;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -13,12 +15,10 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.TextView;
-
-import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Objects;
 import java.util.Random;
-import java.util.prefs.Preferences;
+
 
 import static edu.stlawu.montyhall.MainFragment.NEW_CLICKED;
 import static edu.stlawu.montyhall.MainFragment.PREF_NAME;
@@ -41,11 +41,14 @@ public class GameFragment extends Fragment {
     private Button newGameYes, newGameNo;
     private int wins, loss, total;
     private float loss_percent, win_percent;
-    private int[] valArray; // [0, 0, 0] randomly sets a 1, that represents a car
+    private int[] valArray = new int[] {0,0,0}; // [0, 0, 0] randomly sets a 1, that represents a car
     private int carIndex; // carindex is the 1 above
     private boolean clicked_state;
 
-    private static DecimalFormat df2 = new DecimalFormat(".##");
+    public AudioAttributes aa = null;
+    public SoundPool soundPool = null;
+    public int goatSound, doorSound, wonSound, crySound, musicSound = 0;
+
 
     //setRetainInstance to save instance data on rotation
     public GameFragment() {
@@ -55,7 +58,7 @@ public class GameFragment extends Fragment {
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setRetainInstance(true); // saves instance data
+        // setRetainInstance(true); // saves instance data
 
         // check clicked shared variable
         SharedPreferences clicked_check = getActivity().getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
@@ -64,6 +67,8 @@ public class GameFragment extends Fragment {
         Log.i("CLICKED STATE BOOL", Boolean.toString(clicked_state));
 
         // change instance variables before UI is created
+
+        //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
         // wins
         SharedPreferences wins_check = getActivity().getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
@@ -85,6 +90,37 @@ public class GameFragment extends Fragment {
         SharedPreferences loss_percent_check = getActivity().getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
         loss_percent = loss_percent_check.getFloat("loss_percent", 0);
 
+        // set gamestate
+        SharedPreferences gamestate_check = getActivity().getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
+        gameState = gamestate_check.getInt("gamestate", 0);
+        Log.i("GAMESTATE VAL", Integer.toString(gameState));
+
+
+        //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        this.aa = new AudioAttributes
+                .Builder()
+                .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                .setUsage(AudioAttributes.USAGE_GAME)
+                .build();
+
+        this.soundPool = new SoundPool.Builder()
+                .setMaxStreams(1)
+                .setAudioAttributes(aa)
+                .build();
+
+        this.goatSound = this.soundPool.load(
+                GameFragment.this.getActivity(), R.raw.goat, 1);
+
+        this.doorSound = this.soundPool.load(
+                GameFragment.this.getActivity(), R.raw.door, 1);
+
+        this.wonSound = this.soundPool.load(
+                GameFragment.this.getActivity(), R.raw.fireworks, 1);
+
+        this.crySound = this.soundPool.load(
+                GameFragment.this.getActivity(), R.raw.cry, 1);
+
     }
 
     @Override
@@ -93,96 +129,179 @@ public class GameFragment extends Fragment {
         // Inflate the layout for this fragment
         final View rootView = inflater.inflate(R.layout.fragment_game, container, false);
 
-            // initialize imagebuttons
-            this.door1 = rootView.findViewById(R.id.door1);
-            this.door2 = rootView.findViewById(R.id.door2);
-            this.door3 = rootView.findViewById(R.id.door3);
 
 
-            this.total_wins = rootView.findViewById(R.id.total_wins);
-            this.total_wins.setText(String.valueOf(wins));
-            this.total_loss = rootView.findViewById(R.id.total_loss);
-            this.total_loss.setText(String.valueOf(loss));
-            this.total_sum = rootView.findViewById(R.id.total_sum);
-            this.total_sum.setText(String.valueOf(total));
-
-            this.percent_win = rootView.findViewById(R.id.percent_win);
-            this.percent_win.setText(String.valueOf(win_percent));
-            this.percent_loss = rootView.findViewById(R.id.percent_loss);
-            this.percent_loss.setText(String.valueOf(loss_percent));
+        // initialize imagebuttons
+        this.door1 = rootView.findViewById(R.id.door1);
+        this.door2 = rootView.findViewById(R.id.door2);
+        this.door3 = rootView.findViewById(R.id.door3);
 
 
-            this.newGameYes = rootView.findViewById(R.id.yes_button);
-            this.newGameNo = rootView.findViewById(R.id.no_button);
-            this.textPrompt = rootView.findViewById(R.id.prompt);
-            this.doorArrayList.add(door1);
-            this.doorArrayList.add(door2);
-            this.doorArrayList.add(door3);
+        this.total_wins = rootView.findViewById(R.id.total_wins);
+        this.total_wins.setText(String.valueOf(wins));
+        this.total_loss = rootView.findViewById(R.id.total_loss);
+        this.total_loss.setText(String.valueOf(loss));
+        this.total_sum = rootView.findViewById(R.id.total_sum);
+        this.total_sum.setText(String.valueOf(total));
 
-            // initialize refresh
+        this.percent_win = rootView.findViewById(R.id.percent_win);
+        this.percent_win.setText(String.valueOf(String.format("%.2f",win_percent)).concat("%"));
+        this.percent_loss = rootView.findViewById(R.id.percent_loss);
+        this.percent_loss.setText(String.valueOf(String.format("%.2f",loss_percent)).concat("%"));
+
+
+        this.newGameYes = rootView.findViewById(R.id.yes_button);
+        this.newGameNo = rootView.findViewById(R.id.no_button);
+        this.textPrompt = rootView.findViewById(R.id.prompt);
+        this.doorArrayList.add(door1);
+        this.doorArrayList.add(door2);
+        this.doorArrayList.add(door3);
+
+        if (clicked_state){
             refresh();
+        }else{
+            if (gameState == 0){
 
-            // refresh
-            // 1st click
-            // second click
-            // end state
+                refresh();
+                newGameYes.setVisibility(View.INVISIBLE);
+                newGameNo.setVisibility(View.INVISIBLE);
+            }else if(gameState == 1){
 
-            door1.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
+                SharedPreferences openindex_check = getActivity().getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
+                openIndex = openindex_check.getInt("openindex",0 );
 
-                    GameFragment.this.aDoor = door1;
+                SharedPreferences userindex_check = getActivity().getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
+                userIndex = userindex_check.getInt("userindex",0 );
 
-                    if (gameState == 0)
-                        refresh();
-                    else if (gameState == 1)
-                        aDoorFirstClick();
-                    else if (gameState == 2)
-                        aDoorSecondClick();
+                SharedPreferences carindex_check = getActivity().getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
+                carIndex = carindex_check.getInt("carindex",0 );
 
+                valArray[carIndex] = 1;
+                doorArrayList.get(openIndex).setImageResource(R.drawable.goat);
+
+                doorArrayList.get(userIndex).setImageResource(R.drawable.closed_door_chosen);
+
+                newGameYes.setVisibility(View.INVISIBLE);
+                newGameNo.setVisibility(View.INVISIBLE);
+            }else if(gameState == 2){
+
+
+                SharedPreferences carindex_check = getActivity().getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
+                carIndex = carindex_check.getInt("carindex",0 );
+
+                if (userIndex == carIndex){
+                    textPrompt.setText(R.string.won);
+                }else{
+                    textPrompt.setText(R.string.lost);
                 }
-            });
-            door2.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-
-                    GameFragment.this.aDoor = door2;
-
-                    if (gameState == 0)
-                        refresh();
-                    else if (gameState == 1)
-                        aDoorFirstClick();
-                    else if (gameState == 2)
-                        aDoorSecondClick();
+                for(ImageButton aDoor: doorArrayList){
+                    aDoor.setImageResource(R.drawable.goat);
                 }
-            });
-            door3.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
+                doorArrayList.get(carIndex).setImageResource(R.drawable.car);
 
-                    GameFragment.this.aDoor = door3;
+                newGameYes.setVisibility(View.VISIBLE);
+                newGameNo.setVisibility(View.VISIBLE);
 
-                    if (gameState == 0)
-                        refresh();
-                    else if (gameState == 1)
-                        aDoorFirstClick();
-                    else if (gameState == 2)
-                        aDoorSecondClick();
+            }
+        }
 
+
+        // initialize refresh
+
+        // refresh
+        // 1st click
+        // second click
+        // end state
+
+        door1.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                soundPool.play(doorSound, 1f,
+                        1f, 1, 0, 1f);
+
+                GameFragment.this.aDoor = door1;
+
+                if (gameState == 0) {
+                    aDoorFirstClick();
+                }else if(gameState == 1){
+                    aDoorSecondClick();
                 }
-            });
+
+            }
+        });
+        door2.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                soundPool.play(doorSound, 1f,
+                        1f, 1, 0, 1f);
+
+                GameFragment.this.aDoor = door2;
+
+                if (gameState == 0) {
+                    aDoorFirstClick();
+                }else if(gameState == 1){
+                    aDoorSecondClick();
+                }
+            }
+        });
+        door3.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                soundPool.play(doorSound, 1f,
+                        1f, 1, 0, 1f);
+
+                GameFragment.this.aDoor = door3;
+
+                if (gameState == 0) {
+                    aDoorFirstClick();
+                }else if(gameState == 1){
+                    aDoorSecondClick();
+                }
+
+            }
+        });
+
+        newGameYes.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                refresh();
+
+                soundPool.autoPause();
+
+            }
+        });
+
+        newGameNo.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                soundPool.autoPause();
+
+                Objects.requireNonNull(getActivity()).finish();
+
+            }
+        });
 
         return rootView;
     }
 
 
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
 
+        soundPool.autoPause();
 
-
+    }
 
     // gamestate 0
     // before doors are clicked
     public void refresh() {
+
+
 
         this.textPrompt.setText(R.string.choose_a_door);
         this.newGameYes.setVisibility(View.INVISIBLE);
@@ -192,13 +311,24 @@ public class GameFragment extends Fragment {
         this.valArray = new int[]{0, 0, 0};
         carIndex = randomizer.nextInt(3);
         valArray[carIndex] = 1;
+
+        SharedPreferences carindex = getActivity().getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
+        SharedPreferences.Editor edit_carindex = carindex.edit();
+        edit_carindex.putInt("carindex", carIndex);
+        edit_carindex.apply();
+
         // set up 3 closed doors
         for (ImageButton aDoor : doorArrayList) {
             aDoor.setImageResource(R.drawable.closed_door);
             aDoor.setEnabled(true);
         }
 
-        gameState = 1;
+        gameState = 0;
+
+        SharedPreferences gamestate = getActivity().getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
+        SharedPreferences.Editor edit_gamestate = gamestate.edit();
+        edit_gamestate.putInt("gamestate", gameState);
+        edit_gamestate.apply();
 
     }
 
@@ -209,8 +339,25 @@ public class GameFragment extends Fragment {
     // it represents a door click listener but in a general form
     public void aDoorFirstClick(){
 
+        newGameNo.setVisibility(View.INVISIBLE);
+        newGameNo.setVisibility(View.INVISIBLE);
+
+        gameState = 1;
+
+        SharedPreferences gamestate = getActivity().getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
+        SharedPreferences.Editor edit_gamestate = gamestate.edit();
+        edit_gamestate.putInt("gamestate", gameState);
+        edit_gamestate.apply();
+
+
+
         aDoor.setImageResource(R.drawable.closed_door_chosen);
         userIndex = doorArrayList.indexOf(aDoor);
+
+        SharedPreferences userchoice = getActivity().getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
+        SharedPreferences.Editor edit_userchoice = userchoice.edit();
+        edit_userchoice.putInt("userindex", userIndex);
+        edit_userchoice.apply();
 
         //disable all doors after click
         door1.setEnabled(false);
@@ -226,6 +373,12 @@ public class GameFragment extends Fragment {
 
                 while (openIndex == userIndex || openIndex == carIndex)
                     openIndex = randomizer.nextInt(3);
+
+                SharedPreferences openindex = getActivity().getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
+                SharedPreferences.Editor edit_openindex = openindex.edit();
+                edit_openindex.putInt("openindex", openIndex);
+                edit_openindex.apply();
+
                 // find which door to open in our doorArrayList
                 doorArrayList.get(openIndex).setImageResource(R.drawable.goat);
                 // enable back the two doors that are closed
@@ -236,18 +389,30 @@ public class GameFragment extends Fragment {
 
                 textPrompt.setText(R.string.switch_prompt);
 
+                soundPool.play(goatSound, 1f,
+                        1f, 1, 0, 1f);
+
+
+
 
 
             }
         }, 1000);
 
-        gameState = 2;
+
+
 
     }
 
     // gamestate 2
     public void aDoorSecondClick(){
         {
+            gameState = 2;
+
+            SharedPreferences gamestate = getActivity().getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
+            SharedPreferences.Editor edit_gamestate = gamestate.edit();
+            edit_gamestate.putInt("gamestate", gameState);
+            edit_gamestate.apply();
 
             for (ImageButton theDoor : doorArrayList) {
                 theDoor.setEnabled(false);
@@ -276,7 +441,14 @@ public class GameFragment extends Fragment {
                                         total_wins.setText(String.valueOf(wins));
                                         total++;
 
+                                        soundPool.play(wonSound, 1f,
+                                                1f, 1, 0, 1f);
+
                                     } else if (valArray[doorArrayList.indexOf(aDoor)] == 0) {
+
+                                        soundPool.play(crySound, 1f,
+                                                1f, 1, 0, 1f);
+
                                         textPrompt.setText(R.string.lost);
                                         aDoor.setImageResource(R.drawable.goat);
                                         loss++;
@@ -331,22 +503,6 @@ public class GameFragment extends Fragment {
                                     newGameNo.setVisibility(View.VISIBLE);
                                     newGameYes.setVisibility(View.VISIBLE);
 
-                                    newGameYes.setOnClickListener(new View.OnClickListener() {
-                                        @Override
-                                        public void onClick(View v) {
-                                            refresh();
-
-                                        }
-                                    });
-
-                                    newGameNo.setOnClickListener(new View.OnClickListener() {
-                                        @Override
-                                        public void onClick(View v) {
-                                            Objects.requireNonNull(getActivity()).finish();
-                                            //ameFragment.this.onDetach();
-                                        }
-                                    });
-
                                 }
                             }, 1000);
                         }
@@ -355,8 +511,6 @@ public class GameFragment extends Fragment {
             }, 1000);
 
         }
-
-        // gameState = 3;
 
     }
 
