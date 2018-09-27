@@ -25,6 +25,8 @@ public class MainFragment extends Fragment {
     public static final String NEW_CLICKED = "NEWCLICKED";
 
 
+
+
     private OnFragmentInteractionListener mListener;
 
     public MainFragment() {
@@ -86,6 +88,7 @@ public class MainFragment extends Fragment {
                 Intent intent = new Intent(getActivity(), GameActivity.class);
                 getActivity().startActivity(intent);
             }
+
         });
 
         // continue button is clicked

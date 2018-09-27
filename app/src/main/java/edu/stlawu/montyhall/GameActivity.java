@@ -1,5 +1,7 @@
 package edu.stlawu.montyhall;
 
+import android.app.FragmentManager;
+import android.content.SharedPreferences;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 
@@ -9,5 +11,15 @@ public class GameActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_game);
+
     }
+
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+
+
+    }
+
 }
